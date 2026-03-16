@@ -5,17 +5,15 @@
 //  Created by 오교민 on 3/16/26.
 //
 
+import ComposableArchitecture
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            SearchView(store: Store(initialState: SearchFeature.State(), reducer: { SearchFeature() }))
         }
-        .padding()
+        .edgesIgnoringSafeArea(.horizontal)
     }
 }
 

@@ -7,8 +7,8 @@
 
 import Dependencies
 
-public struct SearchClient {
-    public var search: @Sendable (String) async throws -> AsyncStream<[ResultModel]> 
+public struct SearchClient: Sendable {
+    public var search: @Sendable (String) async throws -> KakaoResponse?
 }
 
 extension SearchClient: DependencyKey {
@@ -24,8 +24,11 @@ extension SearchClient: DependencyKey {
 }
 
 extension DependencyValues {
-    var searchClient: SearchClient {
-        get { self[SearchClient.self] }
-        set { self[SearchClient.self] = newValue }
+//    public var searchClient: SearchClient {
+//        get { self[SearchClient.self] }
+//        set { self[SearchClient.self] = newValue }
+//    }
+    public static var searchClient: SearchClient {
+        Self()[SearchClient.self]
     }
 }
