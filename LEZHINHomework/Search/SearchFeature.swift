@@ -28,7 +28,7 @@ public struct SearchFeature {
         case searchTextChanged(String)
         case searchResponse(KakaoResponse)
         case cancelSearch
-        case error(SearchError)
+        case error(String)
     }
     private let searchCancelID = "searchCancelID"
     
@@ -51,8 +51,10 @@ public struct SearchFeature {
                         if searchedInput != input {
                             await send(.searchTextChanged(input))
                         }
+                    } catch is CancellationError {
+                        // Handle cancellation if needed
                     } catch {
-                        await send(.error(error as! SearchError))
+                        await send(.error(error.localizedDescription))
                     }
                 }
                 .cancellable(id: searchCancelID, cancelInFlight: true)
@@ -72,8 +74,8 @@ public struct SearchFeature {
                 state.isLoading = false
                 return .none
                 
-            case .error(let err):
-                state.errorMsg = err.localizeMessage
+            case .error(let localizedDescription):
+                state.errorMsg = localizedDescription
                 return .none
                 
             case .binding:

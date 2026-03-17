@@ -12,11 +12,11 @@ public struct KakaoResponse: Codable, Sendable, Equatable {
         lhs.documents == rhs.documents
     }
     
-    let meta: KakaoMetaData
+    let meta: KakaoMetaModel
     let documents: [KakaoDocumentModel]
 }
 
-public struct KakaoMetaData: Codable, Sendable, Equatable {
+public struct KakaoMetaModel: Codable, Sendable, Equatable {
     let total_count: Int
     let pageable_count: Int
     let is_end: Bool

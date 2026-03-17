@@ -7,11 +7,6 @@
 
 import Foundation
 
-private enum Kakao: String {
-    case REST_API_KEY = "d6b158efceefb8f138e705e217969141"
-    case baseUrl = "https://dapi.kakao.com/v2/search/image"
-}
-
 public enum SearchSort: String {
     case accuracy
     case recency
@@ -24,7 +19,7 @@ public enum SearchError: Error, Equatable {
 }
 
 extension SearchError {
-    public var localizeMessage: String {
+    public var localizedDescription: String {
         switch self {
         case .urlError:
             return "URL Error"
@@ -46,25 +41,8 @@ public struct SearchRepository: Sendable, SearchProtocol {
 //    page    Integer    결과 페이지 번호, 1~50 사이의 값, 기본 값 1    X
 //    size    Integer    한 페이지에 보여질 문서 수, 1~80 사이의 값, 기본 값 80
     func search(query: String, page: Int, size: Int = 80, sort: SearchSort = .accuracy) async throws -> KakaoResponse? {
-        guard var components = URLComponents(string: Kakao.baseUrl.rawValue) else { throw SearchError.urlError }
-        components.queryItems = [
-            URLQueryItem(name: "query", value: query),
-            URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "sort", value: sort.rawValue),
-            URLQueryItem(name: "size", value: "\(String(size))"),
-        ]
-        guard let url = components.url else { throw SearchError.paramError }
-        var request = URLRequest(url: url) 
-        request.httpMethod = "GET"
-        request.addValue("KakaoAK \(Kakao.REST_API_KEY.rawValue)", forHTTPHeaderField: "Authorization")
-        let (data, response) = try await URLSession.shared.data(for: request)
-        if let httpResponse = response as? HTTPURLResponse {
-            if httpResponse.statusCode != 200 {        
-                throw SearchError.responseError
-            }
-        }
-        let decoder = JSONDecoder()
-        return try decoder.decode(KakaoResponse.self, from: data)
+        let request = KakaoApiRequest.imageSearch(query: query, page: page, size: size, sort: sort)
+        return try await NetworkWorker.request(request)
     }
 }
 

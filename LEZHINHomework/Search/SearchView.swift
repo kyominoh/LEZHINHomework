@@ -29,6 +29,9 @@ struct SearchView: View {
     
     @ViewBuilder
     func listView(documents: [KakaoDocumentModel]) -> some View {
+        if documents.isEmpty {
+            Text("검색 결과가 없습니다.")
+        }
         LazyVStack(spacing: 0) { 
             ForEach(documents) { doc in
                 AsyncImage(url: URL(string: doc.image_url)) { phase in
