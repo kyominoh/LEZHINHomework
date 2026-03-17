@@ -11,8 +11,8 @@ import Foundation
 @Reducer
 public struct SearchFeature {
     @Dependency(\.continuousClock) var clock
-//    @Dependency(\.searchClient) var searchClient
-    let searchClient = DependencyValues.searchClient
+    @Dependency(SearchClient.self) var searchClient
+    @Dependency(BookmarkClient.self) var bookmarkClient
     
     @ObservableState
     public struct State: Equatable, Sendable {
@@ -28,6 +28,7 @@ public struct SearchFeature {
         case searchTextChanged(String)
         case searchResponse(KakaoResponse)
         case cancelSearch
+        case error(SearchError)
     }
     private let searchCancelID = "searchCancelID"
     
@@ -51,7 +52,7 @@ public struct SearchFeature {
                             await send(.searchTextChanged(input))
                         }
                     } catch {
-                        
+                        await send(.error(error as! SearchError))
                     }
                 }
                 .cancellable(id: searchCancelID, cancelInFlight: true)
@@ -69,6 +70,10 @@ public struct SearchFeature {
             case .searchResponse(let response):
                 state.searchResult = response
                 state.isLoading = false
+                return .none
+                
+            case .error(let err):
+                state.errorMsg = err.localizeMessage
                 return .none
                 
             case .binding:

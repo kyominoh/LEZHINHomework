@@ -59,3 +59,9 @@ struct SearchView: View {
         }
     }
 }
+
+#Preview {
+    SearchView(store: Store(initialState: SearchFeature.State(), reducer: { 
+        SearchFeature()
+    }))
+}

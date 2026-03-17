@@ -13,8 +13,9 @@ public struct SearchClient: Sendable {
 
 extension SearchClient: DependencyKey {
     public static var liveValue: SearchClient {
-        let repository = SearchRepository()
-        let usecase = SearchUsecase(repository: repository)
+        let searchRepo = SearchRepository()
+        let bookmarkRepo = BookmarkRepository()
+        let usecase = SearchUsecase(searchRep: searchRepo, bookmarkRepo: bookmarkRepo)
         return Self (
             search: { input in
                 try await usecase.search(input: input)
@@ -24,11 +25,8 @@ extension SearchClient: DependencyKey {
 }
 
 extension DependencyValues {
-//    public var searchClient: SearchClient {
-//        get { self[SearchClient.self] }
-//        set { self[SearchClient.self] = newValue }
-//    }
-    public static var searchClient: SearchClient {
-        Self()[SearchClient.self]
+    public var searchClient: SearchClient {
+        get { self[SearchClient.self] }
+        set { self[SearchClient.self] = newValue }
     }
 }

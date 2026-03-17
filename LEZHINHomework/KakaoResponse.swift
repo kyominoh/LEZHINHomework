@@ -1,5 +1,5 @@
 //
-//  ResultModel.swift
+//  KakaoResponse.swift
 //  LEZHINHomework
 //
 //  Created by 오교민 on 3/16/26.
@@ -22,11 +22,7 @@ public struct KakaoMetaData: Codable, Sendable, Equatable {
     let is_end: Bool
 }
 
-public protocol ResultModel: Sendable {
-    
-}
-
-public struct KakaoDocumentModel: Codable, Sendable, ResultModel, Identifiable, Equatable {
+public struct KakaoDocumentModel: Codable, Sendable, Identifiable, Equatable {
     public var id: String { image_url }
     let collection: String
     let thumbnail_url: String

@@ -17,11 +17,24 @@ public enum SearchSort: String {
     case recency
 }
 
-public enum SearchError {
+public enum SearchError: Error, Equatable {
     case urlError
-    
+    case paramError
+    case responseError
 }
 
+extension SearchError {
+    public var localizeMessage: String {
+        switch self {
+        case .urlError:
+            return "URL Error"
+        case .paramError:
+            return "Parameter Error"
+        case .responseError:
+            return "Response Error"
+        }
+    }
+}
 
 protocol SearchProtocol {
     func search(query: String, page: Int, size: Int, sort: SearchSort) async throws -> KakaoResponse?
@@ -33,18 +46,23 @@ public struct SearchRepository: Sendable, SearchProtocol {
 //    page    Integer    결과 페이지 번호, 1~50 사이의 값, 기본 값 1    X
 //    size    Integer    한 페이지에 보여질 문서 수, 1~80 사이의 값, 기본 값 80
     func search(query: String, page: Int, size: Int = 80, sort: SearchSort = .accuracy) async throws -> KakaoResponse? {
-        guard var components = URLComponents(string: Kakao.baseUrl.rawValue) else { return nil}
+        guard var components = URLComponents(string: Kakao.baseUrl.rawValue) else { throw SearchError.urlError }
         components.queryItems = [
             URLQueryItem(name: "query", value: query),
             URLQueryItem(name: "page", value: "\(page)"),
             URLQueryItem(name: "sort", value: sort.rawValue),
             URLQueryItem(name: "size", value: "\(String(size))"),
         ]
-        guard let url = components.url else { return nil }
+        guard let url = components.url else { throw SearchError.paramError }
         var request = URLRequest(url: url) 
         request.httpMethod = "GET"
         request.addValue("KakaoAK \(Kakao.REST_API_KEY.rawValue)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await URLSession.shared.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse {
+            if httpResponse.statusCode != 200 {        
+                throw SearchError.responseError
+            }
+        }
         let decoder = JSONDecoder()
         return try decoder.decode(KakaoResponse.self, from: data)
     }
