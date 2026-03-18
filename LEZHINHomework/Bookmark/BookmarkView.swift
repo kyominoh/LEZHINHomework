@@ -10,8 +10,30 @@ import SwiftUI
 
 struct BookmarkView: View {
     let store: StoreOf<BookmarkFeature>
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ZStack {
+            if store.state.errorMsg.count > 0 {
+                Text(store.state.errorMsg)
+            }
+            VStack {
+                ScrollView {
+                    let documents: [KakaoDocumentModel] = store.bookmarkList.map(\.data)
+                    if documents.count > 0 {
+                        LazyVStack(spacing: 0) { 
+                            ForEach(documents) { doc in
+                                CacheImageView(doc: doc, isBookmarked: store.state.isBookmarked(document: doc)) { 
+                                    store.send(.toggleBookmark(doc))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            store.send(.bookmarkStream)
+        }
     }
 }
 

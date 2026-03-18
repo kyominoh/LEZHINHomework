@@ -8,7 +8,7 @@
 import Dependencies
 
 public struct SearchClient: Sendable {
-    public var search: @Sendable (String) async throws -> KakaoResponse?
+    public var search: @Sendable (String, Int) async throws -> KakaoResponse?
 }
 
 extension SearchClient: DependencyKey {
@@ -17,8 +17,8 @@ extension SearchClient: DependencyKey {
         let bookmarkRepo = BookmarkRepository()
         let usecase = SearchUsecase(searchRep: searchRepo, bookmarkRepo: bookmarkRepo)
         return Self (
-            search: { input in
-                try await usecase.search(input: input)
+            search: { input, page in
+                try await usecase.search(input: input, page: page)
             }
         )
     }

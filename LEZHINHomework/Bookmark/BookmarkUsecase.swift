@@ -9,10 +9,16 @@ import Foundation
 
 public struct BookmarkUsecase {
     let repo: BookmarkRepository
-    public func addBookmark(keyword: String, uniqueId: String) async throws -> Bool {
-        try await repo.addBookmark(keyword: keyword, uniqueId: uniqueId)
+    public func addBookmark(doc: KakaoDocumentModel) async throws -> Void {
+        let result = try await repo.addBookmark(doc: doc)
+        if !result {
+            throw NetworkError.updateFail
+        }
     }
-    public func removeBookmark(keyword: String, uniqueId: String) async throws -> Bool {
-        try await repo.removeBookmark(keyword: uniqueId, uniqueId: uniqueId)
+    public func removeBookmark(doc: KakaoDocumentModel) async throws -> Void {
+        let result = try await repo.removeBookmark(doc: doc)
+        if !result {
+            throw NetworkError.updateFail
+        }
     }
 }

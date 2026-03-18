@@ -19,16 +19,22 @@ public struct SearchFeature {
         public var searchInput: String = ""
         public var searchedInput: String = ""
         public var isLoading: Bool = false
-        public var searchResult: KakaoResponse?
+        public var searchDocuments: [KakaoDocumentModel] = []
         public var errorMsg: String = ""
+        public var bookmarkList: [BookmarkItem] = []
+        public var page: Int = 1
+        public var isEnd: Bool = false
     }
     
     public enum Action: Equatable, BindableAction, Sendable {
         case binding(BindingAction<State>)
         case searchTextChanged(String)
         case searchResponse(KakaoResponse)
-        case cancelSearch
         case error(String)
+        case bookmarkStream
+        case updateBookmarkList([BookmarkItem])
+        case toggleBookmark(KakaoDocumentModel)
+        case searchNext
     }
     private let searchCancelID = "searchCancelID"
     
@@ -36,9 +42,6 @@ public struct SearchFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
-            case .cancelSearch:
-                return .cancel(id: searchCancelID)
-                
             case .binding(\.searchInput):
                 let input = state.searchInput.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !input.isEmpty else {
@@ -61,26 +64,69 @@ public struct SearchFeature {
 
             case .searchTextChanged(let input):
                 print("\(input)")
-                state.isLoading = true
                 state.searchedInput = input
+                state.isEnd = false
+                state.searchDocuments = [] 
+                state.page = 1
                 return .run { send in
-                    if let response = try await searchClient.search(input) {
+                    await send(.searchNext)
+                }
+                
+            case .searchNext:
+                guard !state.isLoading, !state.isEnd, !state.searchInput.isEmpty else { return .none }
+
+                state.isLoading = true
+                let input = state.searchInput
+                let page = state.page
+                return .run { send in
+                    if let response = try await searchClient.search(input, page) {
                         await send(.searchResponse(response))
                     }
                 }
                 
             case .searchResponse(let response):
-                state.searchResult = response
+                state.searchDocuments.append(contentsOf: response.documents)
                 state.isLoading = false
+                state.isEnd = response.meta.is_end
+                if state.page < response.meta.pageable_count {
+                    state.page += 1
+                } 
                 return .none
                 
             case .error(let localizedDescription):
                 state.errorMsg = localizedDescription
                 return .none
                 
+            case .bookmarkStream:
+                return .run { send in
+                    for await bookmarkList in await bookmarkClient.bookmarkStream() {
+                        await send(.updateBookmarkList(bookmarkList))
+                    }
+                }
+                
+            case .updateBookmarkList(let bookmarkList):
+                state.bookmarkList = bookmarkList
+                return .none
+                
+            case .toggleBookmark(let doc):
+                let isBookmarked = state.isBookmarked(doc: doc)
+                return .run { send in
+                    do {
+                        try await bookmarkClient.toggleBookmark(isBookmarked, doc)
+                    } catch {
+                        await send(.error(error.localizedDescription))
+                    }
+                }
+                
             case .binding:
                 return .none
             }
         }
+    }
+}
+
+extension SearchFeature.State {
+    func isBookmarked(doc: KakaoDocumentModel) -> Bool {
+        bookmarkList.contains { $0.data.image_url == doc.image_url }
     }
 }
