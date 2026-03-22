@@ -10,15 +10,9 @@ import Foundation
 public struct BookmarkUsecase {
     let repo: BookmarkRepository
     public func addBookmark(doc: KakaoDocumentModel) async throws -> Void {
-        let result = try await repo.addBookmark(doc: doc)
-        if !result {
-            throw NetworkError.updateFail
-        }
+        _ = try await repo.addBookmark(doc: doc)
     }
     public func removeBookmark(doc: KakaoDocumentModel) async throws -> Void {
-        let result = try await repo.removeBookmark(doc: doc)
-        if !result {
-            throw NetworkError.updateFail
-        }
+        _ = try await repo.removeBookmark(doc: doc)
     }
 }

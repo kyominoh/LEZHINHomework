@@ -39,6 +39,7 @@ public struct ContentFeature {
         Reduce { state, action in
             switch action {
             case .tabChanged(let tab):
+                state.tab = tab
                 return .none
                 
             case .binding:

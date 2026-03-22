@@ -79,8 +79,12 @@ public struct SearchFeature {
                 let input = state.searchInput
                 let page = state.page
                 return .run { send in
-                    if let response = try await searchClient.search(input, page) {
-                        await send(.searchResponse(response))
+                    do {
+                        if let response = try await searchClient.search(input, page) {
+                            await send(.searchResponse(response))
+                        }
+                    } catch {
+                        await send(.error(error.localizedDescription))
                     }
                 }
                 
@@ -95,6 +99,7 @@ public struct SearchFeature {
                 
             case .error(let localizedDescription):
                 state.errorMsg = localizedDescription
+                state.isLoading = false
                 return .none
                 
             case .bookmarkStream:

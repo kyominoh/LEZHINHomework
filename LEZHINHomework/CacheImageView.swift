@@ -27,13 +27,14 @@ struct CacheImageView: View {
                 HStack {
                     Spacer()
                     VStack {
-                        Button(action: toggleBookmark) { 
+                        Button(action: toggleBookmark) {
                             Image(systemName: isBookmarked ? "heart.fill" : "heart")
                                 .foregroundColor(isBookmarked ? .red : .white)
                                 .padding(8)
                                 .background(Color.black.opacity(0.3))
                                 .clipShape(Circle())
                         }
+                        .buttonStyle(.plain)
                         .padding(10)
                         Spacer()
                     }
@@ -41,6 +42,7 @@ struct CacheImageView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
+                    .frame(height: 200)
             }
         }
         .task(id: "\(doc.image_url):\(retryCount)") { 
@@ -53,27 +55,27 @@ struct CacheImageView: View {
             self.image = img
             return
         }
-        if let img = DiskCacheManager.shared.load(doc.image_url) {
-            self.image = img
-            return
-        }
-        guard let imageURL = URL(string: doc.image_url) else { return }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: imageURL)
-            if let downloadedImage = UIImage(data: data) {
-                MemoryCacheManager.set(downloadedImage, forKey: doc.image_url)
-                self.image = downloadedImage
-                Task.detached(priority: .background) {
-                    await DiskCacheManager.shared.save(downloadedImage, key: doc.image_url)
-                }
-            } else {
-                throw NSError(domain: "Invalid Url", code: -9999)
+
+        let url = doc.image_url
+        let result = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+            if let img = await DiskCacheManager.shared.load(url) {
+                return img
             }
-        } catch {
-            if retryCount < 1 {
-                retryCount += 1
+            guard let imageURL = URL(string: url),
+                  let (data, _) = try? await URLSession.shared.data(from: imageURL) else {
+                return nil
             }
+            return UIImage(data: data)
+        }.value
+
+        if let result {
+            MemoryCacheManager.set(result, forKey: url)
+            self.image = result
+            Task.detached(priority: .background) {
+                await DiskCacheManager.shared.save(result, key: url)
+            }
+        } else if retryCount < 1 {
+            retryCount += 1
         }
     }
 }

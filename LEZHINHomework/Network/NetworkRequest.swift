@@ -22,11 +22,9 @@ public struct NetworkWorker {
         request.httpMethod = method
         req.header?.forEach { request.addValue($1, forHTTPHeaderField: $0) }
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw NetworkError.responseError
         }
-        let decoder = JSONDecoder()
-        return try decoder.decode(T.self, from: data)
+        return try JSONDecoder().decode(T.self, from: data)
     }   
 }

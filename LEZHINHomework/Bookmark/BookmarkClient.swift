@@ -27,27 +27,13 @@ extension BookmarkClient: DependencyKey {
             },
             bookmarkStream: {
                 AsyncStream { continuation in
-                    Task.detached {
-                        let bookmarkList = await repository.getBookmarkList()
-                        continuation.yield(bookmarkList)
-                    }
-                    
-                    let observor = NotificationCenter.default.addObserver(
-                        forName: UserDefaults.didChangeNotification,
-                        object: nil,
-                        queue: .current
-                    ) { _ in
-                        Task.detached {
-                            let updatedList = await repository.getBookmarkList()
-                            continuation.yield(updatedList)
+                    let task = Task {
+                        await continuation.yield(repository.getBookmarkList())
+                        for await _ in NotificationCenter.default.notifications(named: UserDefaults.didChangeNotification) {
+                            await continuation.yield(repository.getBookmarkList())
                         }
                     }
-                    let holder = AsyncStreamReleasable(observor)
-                    continuation.onTermination = { @Sendable _ in
-                        Task {
-                            await holder.clearObject()
-                        }
-                    }
+                    continuation.onTermination = { _ in task.cancel() }
                 }
             }
         )
@@ -61,14 +47,3 @@ extension DependencyValues {
     }
 }
 
-actor AsyncStreamReleasable {
-    var target: AnyObject?
-    init(_ target: AnyObject) {
-        self.target = target
-    }
-    func clearObject() {
-        if let target = self.target as? NSObjectProtocol {
-            NotificationCenter.default.removeObserver(target)
-        } 
-    }
-}

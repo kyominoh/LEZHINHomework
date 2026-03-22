@@ -10,8 +10,9 @@ import SwiftUI
 
 struct ContentView: View {
     @Bindable var store: StoreOf<ContentFeature>
+
     var body: some View {
-        TabView {
+        TabView(selection: $store.tab.sending(\.tabChanged)) {
             SearchView(store: store.scope(state: \.search, action: \.search))
                 .tabItem { Label("검색", systemImage: "magnifyingglass") }
                 .tag(ContentTab.search)
@@ -19,11 +20,9 @@ struct ContentView: View {
                 .tabItem { Label("북마크", systemImage: "bookmark") }
                 .tag(ContentTab.bookmark)
         }
-        .edgesIgnoringSafeArea(.horizontal)
     }
 }
 
 #Preview {
     ContentView(store: Store(initialState: ContentFeature.State(), reducer: { ContentFeature() }))
 }
-
